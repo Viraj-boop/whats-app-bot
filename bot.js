@@ -18,47 +18,95 @@ const client = new Client({
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage"
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process"
     ]
   }
 });
 
-// QR Code
+// QR Code Event
 client.on("qr", (qr) => {
-  console.log("Scan the QR Code below:");
+
+  console.log("\n==============================");
+  console.log("📱 SCAN THIS QR CODE");
+  console.log("WhatsApp → Linked Devices → Link Device");
+  console.log("==============================\n");
+
   qrcode.generate(qr, { small: false });
+
 });
 
-// Bot Ready
+// Ready Event
 client.on("ready", () => {
-  console.log("AI WhatsApp Bot Ready 🚀");
+
+  console.log("=================================");
+  console.log("🚀 AI WhatsApp Bot is READY");
+  console.log("=================================");
+
+});
+
+// Authentication
+client.on("authenticated", () => {
+  console.log("✅ WhatsApp Authenticated");
+});
+
+client.on("auth_failure", msg => {
+  console.error("❌ Authentication Failed:", msg);
+});
+
+// Disconnect
+client.on("disconnected", (reason) => {
+  console.log("⚠️ Client disconnected:", reason);
 });
 
 // Message Listener
 client.on("message", async (message) => {
 
-  // Ignore status messages
-  if (message.from === "status@broadcast") return;
-
-  const userMessage = message.body;
-
   try {
 
-    const result = await model.generateContent(userMessage);
+    // Ignore status
+    if (message.from === "status@broadcast") return;
+
+    // Ignore empty messages
+    if (!message.body) return;
+
+    const userMessage = message.body;
+
+    console.log(`📩 Message from ${message.from}:`, userMessage);
+
+    // Show typing indicator
+    const chat = await message.getChat();
+    chat.sendStateTyping();
+
+    // AI Prompt (improves responses)
+    const prompt = `
+You are a helpful AI assistant replying on WhatsApp.
+Be friendly, short and clear.
+
+User message:
+${userMessage}
+`;
+
+    const result = await model.generateContent(prompt);
 
     const response = result.response.text();
+
+    console.log("🤖 AI Response:", response);
 
     await message.reply(response);
 
   } catch (error) {
 
-    console.error(error);
+    console.error("❌ AI Error:", error);
 
-    message.reply("⚠️ AI is thinking... try again.");
+    await message.reply("⚠️ AI is thinking... please try again.");
 
   }
 
 });
 
-// Start bot
+// Start Bot
 client.initialize();
