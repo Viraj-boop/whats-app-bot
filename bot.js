@@ -26,7 +26,7 @@ const client = new Client({
 // QR Code
 client.on("qr", (qr) => {
   console.log("Scan the QR Code below:");
-  qrcode.generate(qr, { small: true });
+  qrcode.generate(qr, { small: false });
 });
 
 // Bot Ready
