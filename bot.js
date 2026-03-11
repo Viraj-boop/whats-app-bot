@@ -1,15 +1,16 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const QRCode = require("qrcode");
+const fs = require("fs-extra");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Gemini API
+
 const genAI = new GoogleGenerativeAI("AIzaSyDRQ3rFmOiFwvtlyPBONlCpPt7XRiz30RI");
 
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash"
 });
 
-// WhatsApp Client
+
 const client = new Client({
   authStrategy: new LocalAuth(),
 
@@ -18,105 +19,91 @@ const client = new Client({
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-zygote",
-      "--single-process"
+      "--disable-dev-shm-usage"
     ]
   }
 });
 
-// QR Code Event
+// Load existing leads
+let leads = [];
+
+if (fs.existsSync("leads.json")) {
+  leads = fs.readJsonSync("leads.json");
+}
+
+// QR
 client.on("qr", async (qr) => {
-
-  console.log("\n================================");
-  console.log("📱 QR RECEIVED");
-  console.log("Open the link below in browser");
-  console.log("================================\n");
-
-  try {
-
-    const qrImage = await QRCode.toDataURL(qr);
-
-    console.log(qrImage);
-
-    console.log("\nSteps:");
-    console.log("1. Copy the link above");
-    console.log("2. Paste in browser");
-    console.log("3. Scan with WhatsApp");
-    console.log("WhatsApp → Linked Devices → Link Device\n");
-
-  } catch (err) {
-    console.error("QR generation error:", err);
-  }
-
+  const qrImage = await QRCode.toDataURL(qr);
+  console.log("Open this in browser and scan:");
+  console.log(qrImage);
 });
 
-// Bot Ready
+// Ready
 client.on("ready", () => {
-  console.log("=================================");
-  console.log("🚀 AI WhatsApp Bot Ready");
-  console.log("=================================");
+  console.log("AI WhatsApp Bot Ready 🚀");
 });
 
-// Authentication
-client.on("authenticated", () => {
-  console.log("✅ WhatsApp Authenticated");
-});
-
-client.on("auth_failure", (msg) => {
-  console.error("❌ Auth Failure:", msg);
-});
-
-// Disconnect
-client.on("disconnected", (reason) => {
-  console.log("⚠️ Client disconnected:", reason);
-});
-
-// Message Listener
+// Message
 client.on("message", async (message) => {
 
-  try {
+  if (message.from === "status@broadcast") return;
 
-    // Ignore status messages
-    if (message.from === "status@broadcast") return;
+  const userNumber = message.from;
+  const text = message.body;
 
-    // Ignore empty messages
-    if (!message.body) return;
+  let lead = leads.find(l => l.number === userNumber);
 
-    const userMessage = message.body;
+  // If new lead
+  if (!lead) {
 
-    console.log(`📩 Message from ${message.from}:`, userMessage);
+    lead = {
+      number: userNumber,
+      name: null,
+      requirement: null
+    };
 
-    // Show typing indicator
-    const chat = await message.getChat();
-    chat.sendStateTyping();
+    leads.push(lead);
 
-    const prompt = `
-You are a helpful AI assistant replying on WhatsApp.
-Keep answers short, clear and friendly.
+    await message.reply(
+      "👋 Welcome! Before we continue, may I know your *name*?"
+    );
 
-User: ${userMessage}
-`;
-
-    const result = await model.generateContent(prompt);
-
-    const response = result.response.text();
-
-    console.log("🤖 AI Response:", response);
-
-    await message.reply(response);
-
-  } catch (error) {
-
-    console.error("❌ AI Error:", error);
-
-    await message.reply("⚠️ AI is thinking... please try again.");
-
+    return;
   }
+
+  // Capture name
+  if (!lead.name) {
+
+    lead.name = text;
+
+    await message.reply(
+      `Nice to meet you ${lead.name}! 😊\nWhat service are you looking for?`
+    );
+
+    return;
+  }
+
+  // Capture requirement
+  if (!lead.requirement) {
+
+    lead.requirement = text;
+
+    fs.writeJsonSync("leads.json", leads, { spaces: 2 });
+
+    await message.reply(
+      "✅ Thank you! Our team will contact you shortly.\nMeanwhile you can ask me anything."
+    );
+
+    return;
+  }
+
+  // AI reply
+  const result = await model.generateContent(text);
+  const response = result.response.text();
+
+  await message.reply(response);
 
 });
 
-// Start Bot
+// Start
 client.initialize();
