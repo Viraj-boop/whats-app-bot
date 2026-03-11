@@ -3,12 +3,15 @@ const QRCode = require("qrcode");
 const fs = require("fs-extra");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+// 1. Use your NEW API Key here
+const genAI = new GoogleGenerativeAI("AIzaSyDawEI8Em8uAnX__bEwisMzNiLIiITG_qo");
 
-const genAI = new GoogleGenerativeAI("AIzaSyDRQ3rFmOiFwvtlyPBONlCpPt7XRiz30RI");
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+// 2. Use the stable 'gemini-1.5-flash' name
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash" 
 });
+
+// ... rest of your client setup ...
 
 
 const client = new Client({

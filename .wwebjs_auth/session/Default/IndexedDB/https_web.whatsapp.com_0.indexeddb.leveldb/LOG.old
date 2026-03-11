@@ -1,0 +1,9 @@
+2026/03/12-00:02:30.456 4308 Reusing MANIFEST C:\Users\viraj\ai-whatsapp-bot\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/12-00:02:30.457 4308 Recovering log #17
+2026/03/12-00:02:30.457 4308 Reusing old log C:\Users\viraj\ai-whatsapp-bot\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000017.log 
+2026/03/12-00:02:31.008 166c4 Compacting 1@1 + 1@2 files
+2026/03/12-00:02:31.051 166c4 Generated table #20@1: 40228 keys, 1717616 bytes
+2026/03/12-00:02:31.051 166c4 Compacted 1@1 + 1@2 files => 1717616 bytes
+2026/03/12-00:02:31.052 166c4 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/12-00:02:31.052 166c4 Delete type=2 #15
+2026/03/12-00:02:31.052 166c4 Delete type=2 #18
