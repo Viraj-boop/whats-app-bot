@@ -1,5 +1,5 @@
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const qrcode = require("qrcode-terminal");
+const QRCode = require("qrcode");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Gemini API
@@ -28,24 +28,36 @@ const client = new Client({
 });
 
 // QR Code Event
-client.on("qr", (qr) => {
+client.on("qr", async (qr) => {
 
-  console.log("\n==============================");
-  console.log("📱 SCAN THIS QR CODE");
-  console.log("WhatsApp → Linked Devices → Link Device");
-  console.log("==============================\n");
+  console.log("\n================================");
+  console.log("📱 QR RECEIVED");
+  console.log("Open the link below in browser");
+  console.log("================================\n");
 
-  qrcode.generate(qr, { small: false });
+  try {
+
+    const qrImage = await QRCode.toDataURL(qr);
+
+    console.log(qrImage);
+
+    console.log("\nSteps:");
+    console.log("1. Copy the link above");
+    console.log("2. Paste in browser");
+    console.log("3. Scan with WhatsApp");
+    console.log("WhatsApp → Linked Devices → Link Device\n");
+
+  } catch (err) {
+    console.error("QR generation error:", err);
+  }
 
 });
 
-// Ready Event
+// Bot Ready
 client.on("ready", () => {
-
   console.log("=================================");
-  console.log("🚀 AI WhatsApp Bot is READY");
+  console.log("🚀 AI WhatsApp Bot Ready");
   console.log("=================================");
-
 });
 
 // Authentication
@@ -53,8 +65,8 @@ client.on("authenticated", () => {
   console.log("✅ WhatsApp Authenticated");
 });
 
-client.on("auth_failure", msg => {
-  console.error("❌ Authentication Failed:", msg);
+client.on("auth_failure", (msg) => {
+  console.error("❌ Auth Failure:", msg);
 });
 
 // Disconnect
@@ -67,7 +79,7 @@ client.on("message", async (message) => {
 
   try {
 
-    // Ignore status
+    // Ignore status messages
     if (message.from === "status@broadcast") return;
 
     // Ignore empty messages
@@ -81,13 +93,11 @@ client.on("message", async (message) => {
     const chat = await message.getChat();
     chat.sendStateTyping();
 
-    // AI Prompt (improves responses)
     const prompt = `
 You are a helpful AI assistant replying on WhatsApp.
-Be friendly, short and clear.
+Keep answers short, clear and friendly.
 
-User message:
-${userMessage}
+User: ${userMessage}
 `;
 
     const result = await model.generateContent(prompt);
