@@ -1,39 +1,64 @@
-const { Client } = require('whatsapp-web.js')
-const qrcode = require('qrcode-terminal')
-const { GoogleGenerativeAI } = require("@google/generative-ai")
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const qrcode = require("qrcode-terminal");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI("AIzaSyDRQ3rFmOiFwvtlyPBONlCpPt7XRiz30RI")
+// Gemini API
+const genAI = new GoogleGenerativeAI("AIzaSyDRQ3rFmOiFwvtlyPBONlCpPt7XRiz30RI");
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash"
+});
 
-const client = new Client()
+// WhatsApp Client
+const client = new Client({
+  authStrategy: new LocalAuth(),
 
-client.on('qr', (qr) => {
- qrcode.generate(qr, { small: true })
-})
+  puppeteer: {
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage"
+    ]
+  }
+});
 
-client.on('ready', () => {
- console.log("AI WhatsApp Bot Ready 🚀")
-})
+// QR Code
+client.on("qr", (qr) => {
+  console.log("Scan the QR Code below:");
+  qrcode.generate(qr, { small: true });
+});
 
-client.on('message', async message => {
+// Bot Ready
+client.on("ready", () => {
+  console.log("AI WhatsApp Bot Ready 🚀");
+});
 
- const userMessage = message.body
+// Message Listener
+client.on("message", async (message) => {
 
- try {
+  // Ignore status messages
+  if (message.from === "status@broadcast") return;
 
- const result = await model.generateContent(userMessage)
+  const userMessage = message.body;
 
- const response = result.response.text()
+  try {
 
- message.reply(response)
+    const result = await model.generateContent(userMessage);
 
- } catch (error) {
+    const response = result.response.text();
 
- message.reply("AI is thinking... try again.")
+    await message.reply(response);
 
- }
+  } catch (error) {
 
-})
+    console.error(error);
 
-client.initialize()
+    message.reply("⚠️ AI is thinking... try again.");
+
+  }
+
+});
+
+// Start bot
+client.initialize();
